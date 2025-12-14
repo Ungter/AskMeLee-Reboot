@@ -225,6 +225,16 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
         let fullReasoning = '';
         let usage = null;
 
+        const cleanContent = (content) => {
+            // check for the refusal pattern: <!--- content ---> ... --- ... Sorry, I cannot generate that
+            const refusalPattern = /<!---\s*([\s\S]*?)\s*--->\s*\n*\s*---\s*\n*\s*Sorry,?\s*I\s*cannot\s*generate\s*that\.?/i;
+            const match = content.match(refusalPattern);
+            if (match) {
+                return match[1].trim();
+            }
+            return content.replace(/<tag>/g, '');
+        };
+
         for await (const chunk of stream) {
             // console.log(JSON.stringify(chunk, null, 2));
             const delta = chunk.choices[0]?.delta || {};
@@ -241,10 +251,10 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
             fullContent += contentDelta;
             fullReasoning += reasoningDelta;
 
-            onUpdate(fullContent, fullReasoning, usage);
+            onUpdate(cleanContent(fullContent), fullReasoning, usage);
         }
 
-        onUpdate(fullContent, fullReasoning, usage);
+        onUpdate(cleanContent(fullContent), fullReasoning, usage);
 
     } catch (error) {
         console.error('Error streaming response:', error);

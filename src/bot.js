@@ -292,7 +292,7 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         console.log(`[Button] User ${interaction.user.id} (${interaction.user.tag}) clicked new_chat in channel ${interaction.channelId}`);
-        sessions.resetSession(interaction.user.id, interaction.channel.id);
+        sessions.resetSession(interaction.user.id, interaction.channelId);
         await interaction.reply({ content: '✅ New chat started! Context cleared for this channel.', flags: MessageFlags.Ephemeral });
     } else if (interaction.customId === 'show_reasoning') {
         const reasoning = reasoningCache.get(interaction.message.id);
