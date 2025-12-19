@@ -20,4 +20,10 @@ module.exports = {
     systemPrompt: systemPrompt,
     clientId: process.env.CLIENT_ID,
     kemonoSessionKey: process.env.KEMONO_SESSION_KEY,
+    // Voice-related configuration
+    openaiApiKey: process.env.OPENAI_API,
+    voxtralModel: process.env.VOXTRAL_MODEL || 'mistralai/voxtral-small-24b-2507',
+    ttsModel: process.env.TTS_MODEL || 'gpt-4o-mini-tts',
+    ttsVoice: process.env.TTS_VOICE || 'onyx',
+    wakeWord: 'hey lee',
 };
