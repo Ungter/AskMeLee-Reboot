@@ -146,17 +146,7 @@ LeeBotRenewed/
 ├── .gitignore
 └── package.json
 ```
-## Technical Architecture
 
-graph TD
-    User[User Voice] -->|UDP/Opus| DiscordGW[Discord Gateway]
-    DiscordGW -->|PCM Stream| ffmpeg[FFmpeg/Prism]
-    ffmpeg -->|Audio Buffer| WakeWord[Wake Word Detector]
-    WakeWord -->|Trigger| STT[Mistral Voxtral]
-    STT -->|Text| LLM[DeepSeek R1]
-    LLM -->|Response| TTS[OpenAI TTS]
-    TTS -->|Audio Stream| DiscordGW
-    
 ## Scripts
 
 | Script | Command | Description |
@@ -176,3 +166,4 @@ graph TD
 | `ffmpeg-static` | Audio format conversion |
 | `sodium-native` | Voice encryption |
 | `dotenv` | Environment variable loading |
+
