@@ -59,6 +59,7 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 - A Discord bot token ([Discord Developer Portal](https://discord.com/developers/applications))
 - An OpenRouter API key ([OpenRouter](https://openrouter.ai/))
 - OpenAI API key for TTS
+- Visual C++ Redistributable (Optional if you plan on using the JXR converter)
 
 ### Installation
 
