@@ -1,10 +1,10 @@
 # LeeBot Renewed
 
-A Discord bot featuring AI-powered chat with voice support and Kemono API integration.
+Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other features.
 
 ## Features
 
-### AI Commands
+### Commands
 
 | Command | Description |
 |---------|-------------|
