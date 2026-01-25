@@ -118,27 +118,8 @@ LeeBotRenewed/
 │   ├── deploy-commands.js    # Slash command deployment
 │   │
 │   ├── commands/
-│   │   ├── general/          # General commands
-│   │   │   ├── chat.js       # /chat command
-│   │   │   ├── analyze.js    # Ask AI context menu
-│   │   │   └── jxrConvert.js # /jxrconvert command
-│   │   ├── kemono/           # Kemono API commands
-│   │   │   ├── kemonoTop.js
-│   │   │   ├── kemonoRandom.js
-│   │   │   └── kemonoSearch.js
-│   │   └── voice/            # Voice channel commands
-│   │       ├── joinVc.js     # /join-vc command
-│   │       └── leaveVc.js    # /leave-vc command
-│   │
-│   ├── voice/                # Voice processing modules
-│   │   ├── voiceManager.js   # Voice connection management
-│   │   ├── voiceHandler.js   # Voice event handling
-│   │   ├── audioProcessor.js # Audio stream processing
-│   │   ├── speechToText.js   # STT via Voxtral
-│   │   ├── textToSpeech.js   # TTS via OpenAI
-│   │   ├── voiceAI.js        # Voice-specific AI integration
-│   │   └── wakeWordDetector.js # "Hey Lee" detection
-│   │
+│   │   ├── general/       # AI chat commands
+│   │   └── kemono/        # Kemono API commands
 │   └── utils/
 │       ├── kemonoApi.js      # Kemono API utilities
 │       └── responseHandler.js # Discord response handling
@@ -155,20 +136,3 @@ LeeBotRenewed/
 |--------|---------|-------------|
 | Start | `npm start` | Run the bot |
 | Deploy | `npm run deploy` | Deploy/update slash commands to Discord |
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `discord.js` | Discord API client |
-| `@discordjs/voice` | Voice channel support |
-| `@discordjs/opus` | Audio encoding |
-| `openai` | OpenAI TTS integration |
-| `prism-media` | Audio stream processing |
-| `ffmpeg-static` | Audio format conversion |
-| `sodium-native` | Voice encryption |
-| `dotenv` | Environment variable loading |
-
-## License
-
-ISC
