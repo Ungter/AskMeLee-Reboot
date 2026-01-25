@@ -150,19 +150,3 @@ LeeBotRenewed/
 |--------|---------|-------------|
 | Start | `npm start` | Run the bot |
 | Deploy | `npm run deploy` | Deploy/update slash commands to Discord |
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `discord.js` | Discord API client |
-| `@discordjs/voice` | Voice channel support |
-| `@discordjs/opus` | Audio encoding |
-| `openai` | OpenAI TTS integration |
-| `prism-media` | Audio stream processing |
-| `ffmpeg-static` | Audio format conversion |
-| `sodium-native` | Voice encryption |
-| `dotenv` | Environment variable loading |
-
-
-
