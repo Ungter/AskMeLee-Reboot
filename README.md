@@ -4,12 +4,11 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 
 ## Features
 
-### Commands
+### AI Commands
 
 | Command | Description |
 |---------|-------------|
 | `/chat` | Chat with the AI. Supports message ID resolution and optional reasoning mode. |
-| `/jxrconvert` | Convert a `.jxr` image file to PNG format. Attach a JXR file and get back a PNG. |
 | `Ask AI` (Context Menu) | Right-click any message to ask the AI about it. Opens a modal for your question. |
 
 **AI Features:**
@@ -45,6 +44,12 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 - Automatic file attachments (images, documents)
 - Large file fallback with direct Kemono links
 - Rich embeds with post metadata
+
+### Other Commands
+
+| Command | Description |
+|---------|-------------|
+| `/jxrconvert` | Convert a `.jxr` image file to PNG format. Attach a JXR file and get back a PNG. |
 
 ## Setup
 
