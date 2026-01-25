@@ -4,7 +4,7 @@ A Discord bot featuring AI-powered chat with voice support and Kemono API integr
 
 ## Features
 
-### 🤖 AI Commands
+### AI Commands
 
 | Command | Description |
 |---------|-------------|
@@ -19,7 +19,7 @@ A Discord bot featuring AI-powered chat with voice support and Kemono API integr
 - Message ID resolution - paste a Discord message ID to include its content
 - DM & server support with user-installable commands
 
-### �️ Voice Commands
+### Voice Commands
 
 | Command | Description |
 |---------|-------------|
@@ -32,7 +32,7 @@ A Discord bot featuring AI-powered chat with voice support and Kemono API integr
 - **Text-to-Speech**: OpenAI TTS with customizable voice
 - **Live Listening**: Continuous audio processing while in voice channel
 
-### �🎨 Kemono Commands
+### Kemono Commands
 
 | Command | Description |
 |---------|-------------|
@@ -53,8 +53,7 @@ A Discord bot featuring AI-powered chat with voice support and Kemono API integr
 - [Node.js](https://nodejs.org/) v18 or higher
 - A Discord bot token ([Discord Developer Portal](https://discord.com/developers/applications))
 - An OpenRouter API key ([OpenRouter](https://openrouter.ai/))
-- (Optional) OpenAI API key for TTS
-- (Optional) Kemono session key for authenticated requests
+- OpenAI API key for TTS
 
 ### Installation
 
