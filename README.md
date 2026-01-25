@@ -139,8 +139,7 @@ LeeBotRenewed/
 │       ├── kemonoApi.js      # Kemono API utilities
 │       └── responseHandler.js # Discord response handling
 │
-├── refs/                     # Reference documentation
-├── .env                      # Environment variables (not tracked)
+├── .env                      # Environment variables
 ├── .gitignore
 └── package.json
 ```
@@ -164,5 +163,6 @@ LeeBotRenewed/
 | `ffmpeg-static` | Audio format conversion |
 | `sodium-native` | Voice encryption |
 | `dotenv` | Environment variable loading |
+
 
 
