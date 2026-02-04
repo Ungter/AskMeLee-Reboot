@@ -79,23 +79,14 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
    Create a `.env` file in the root directory:
    ```env
    # Required
-   DISCORD_TOKEN=your_discord_bot_token
-   CLIENT_ID=your_discord_client_id
-   OPENROUTER_API_KEY=your_openrouter_api_key
-   
-   # Optional: AI Models
-   OPENROUTER_MODEL=deepseek/deepseek-r1:free
-   NON_THINKING_MODEL=deepseek/deepseek-chat
-   CLASSIFIER_MODEL=arcee-ai/trinity-mini:free
-   
-   # Optional: Voice Features
-   OPENAI_API=your_openai_api_key
-   VOXTRAL_MODEL=mistralai/voxtral-small-24b-2507
-   TTS_MODEL=gpt-4o-mini-tts
-   TTS_VOICE=onyx
-   
-   # Optional: Kemono
-   KEMONO_SESSION_KEY=your_kemono_session_key
+   DISCORD_TOKEN=
+   CLIENT_ID=
+   OPENROUTER_API_KEY=
+   OPENROUTER_MODEL=deepseek/deepseek-v3.2-speciale
+   NON_THINKING_MODEL=deepseek/deepseek-v3.2
+   OPENAI_API=
+   TTS_API=
+   KEMONO_SESSION_KEY= (Optional)
    ```
 
 4. **Deploy slash commands**
@@ -148,8 +139,7 @@ LeeBotRenewed/
 │       ├── kemonoApi.js      # Kemono API utilities
 │       └── responseHandler.js # Discord response handling
 │
-├── refs/                     # Reference documentation
-├── .env                      # Environment variables (not tracked)
+├── .env                      # Environment variables
 ├── .gitignore
 └── package.json
 ```
@@ -160,17 +150,3 @@ LeeBotRenewed/
 |--------|---------|-------------|
 | Start | `npm start` | Run the bot |
 | Deploy | `npm run deploy` | Deploy/update slash commands to Discord |
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `discord.js` | Discord API client |
-| `@discordjs/voice` | Voice channel support |
-| `@discordjs/opus` | Audio encoding |
-| `openai` | OpenAI TTS integration |
-| `prism-media` | Audio stream processing |
-| `ffmpeg-static` | Audio format conversion |
-| `sodium-native` | Voice encryption |
-| `dotenv` | Environment variable loading |
-
