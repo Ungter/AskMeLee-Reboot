@@ -112,6 +112,7 @@ LeeBotRenewed/
 │   ├── system_prompt.txt     # AI system prompt
 │   ├── langExts.json         # File extension mappings
 │   ├── deploy-commands.js    # Slash command deployment
+│   ├── start.js              # Auto-restart wrapper
 │   │
 │   ├── commands/
 │   │   ├── general/          # General commands
@@ -148,5 +149,5 @@ LeeBotRenewed/
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| Start | `npm start` | Run the bot |
+| Start | `npm run start:auto` | Run the bot with auto-restart |
 | Deploy | `npm run deploy` | Deploy/update slash commands to Discord |
