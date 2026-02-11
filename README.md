@@ -8,15 +8,15 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 
 | Command | Description |
 |---------|-------------|
-| `/chat` | Chat with the AI. Supports message ID resolution and optional reasoning mode. |
+| `/chat` | Chat with the AI. |
 | `Ask AI` (Context Menu) | Right-click any message to ask the AI about it. Opens a modal for your question. |
 
 **AI Features:**
 - Session-based conversation history
-- Reasoning mode toggle for step-by-step explanations
+- Reasoning mode toggle for hard questions
 - Automatic text file attachment extraction (`.txt`, `.md`, `.js`, `.py`, `.json`)
 - Message ID resolution - paste a Discord message ID to include its content
-- DM & server support with user-installable commands
+- Context awareness, searches information online if needed.
 
 ### Voice Commands
 
@@ -27,8 +27,8 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 
 **Voice Features:**
 - **Wake Word Activation**: Say "Hey Lee" followed by your question
-- **Speech-to-Text**: Powered by Mistral Voxtral via OpenRouter
-- **Text-to-Speech**: OpenAI TTS with customizable voice
+- **Speech-to-Text**: Powered by Gemini 2.5 flash
+- **Text-to-Speech**: Minimax TTS with customizable voice
 - **Live Listening**: Continuous audio processing while in voice channel
 
 ### Kemono Commands
@@ -143,4 +143,5 @@ LeeBotRenewed/
 ├── .env                      # Environment variables
 ├── .gitignore
 └── package.json
+
 ```
