@@ -157,14 +157,11 @@ async function needsContext(query) {
  */
 async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
     try {
-        // Prepend system prompt with current date and time
         const currentDateTime = new Date().toLocaleString();
         const systemPromptWithTime = `${config.systemPrompt}\n\nCurrent Date and Time: ${currentDateTime}\n\n`;
 
-        // Get the latest user message for classification
         const lastUserMessage = messages.filter(m => m.role === 'user').pop();
 
-        // Run both classifiers in parallel for efficiency
         let messagesToSend = messages;
         let selectedModel = reasoningEnabled ? config.thinkingModel : config.nonThinkingModel;
 
@@ -208,15 +205,9 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
             stream_options: { include_usage: true },
             provider: {
                 sort: 'throughput'
-            },
-            reasoning: {
-                effort: 'none',
-                enabled: true,
-                exclude: false
             }
         };
 
-        // Only add reasoning parameter if enabled and using the reasoning model
         if (reasoningEnabled) {
             requestOptions.reasoning = {
                 effort: 'high',
@@ -232,7 +223,7 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
         let usage = null;
 
         const cleanContent = (content) => {
-            // check for the refusal pattern: <!--- content ---> ... --- ... Sorry, I cannot generate that
+            // check for the refusal pattern
             const refusalPattern = /<!---\s*([\s\S]*?)\s*--->\s*\n*\s*---\s*\n*\s*Sorry,?\s*I\s*cannot\s*generate\s*that\.?/i;
             const match = content.match(refusalPattern);
             if (match) {
