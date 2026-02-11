@@ -81,12 +81,12 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
    DISCORD_TOKEN=
    CLIENT_ID=
    OPENROUTER_API_KEY=
-   OPENAI_API=
    MINIMAX_API_KEY=
    THINKING_MODEL=z-ai/glm-5
    NON_THINKING_MODEL=deepseek/deepseek-v3.2
    SST_MODEL=google/gemini-2.5-flash-lite-preview-09-2025
    TTS_MODEL=speech-2.8-hd
+   CLASSIFIER_MODEL=arcee-ai/trinity-mini:free
    ```
 
 4. **Deploy slash commands**
