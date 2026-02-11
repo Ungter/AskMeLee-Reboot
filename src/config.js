@@ -8,22 +8,22 @@ try {
     console.log("Using .txt system prompt");
 } catch (err) {
     console.warn('Failed to read system_prompt.txt, using fallback.');
-    systemPrompt = process.env.SYSTEM_PROMPT || 'You are a helpful AI assistant.';
+    systemPrompt = process.env.SYSTEM_PROMPT;
 }
 
 module.exports = {
     discordToken: process.env.DISCORD_TOKEN,
     openRouterApiKey: process.env.OPENROUTER_API_KEY,
-    openRouterModel: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-r1:free',
-    nonThinkingModel: process.env.NON_THINKING_MODEL || 'deepseek/deepseek-chat',
-    classifierModel: process.env.CLASSIFIER_MODEL || 'arcee-ai/trinity-mini:free',
+    thinkingModel: process.env.THINKING_MODEL,
+    nonThinkingModel: process.env.NON_THINKING_MODEL,
+    classifierModel: process.env.CLASSIFIER_MODEL,
     systemPrompt: systemPrompt,
     clientId: process.env.CLIENT_ID,
-    kemonoSessionKey: process.env.KEMONO_SESSION_KEY,
-    // Voice-related configuration
+
     openaiApiKey: process.env.OPENAI_API,
-    voxtralModel: process.env.VOXTRAL_MODEL || 'mistralai/voxtral-small-24b-2507',
-    ttsModel: process.env.TTS_MODEL || 'gpt-4o-mini-tts',
-    ttsVoice: process.env.TTS_VOICE || 'onyx',
+    sstModel: process.env.SST_MODEL,
+    ttsModel: process.env.TTS_MODEL,
+    minimaxApiKey: process.env.MINIMAX_API_KEY,
+    voiceId: process.env.VOICE_ID,
     wakeWord: 'hey lee',
 };

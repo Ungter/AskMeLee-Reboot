@@ -166,7 +166,7 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
 
         // Run both classifiers in parallel for efficiency
         let messagesToSend = messages;
-        let selectedModel = reasoningEnabled ? config.openRouterModel : config.nonThinkingModel;
+        let selectedModel = reasoningEnabled ? config.thinkingModel : config.nonThinkingModel;
 
         if (lastUserMessage) {
             console.log(`[Classifiers] Running context and online classifiers in parallel...`);
@@ -199,21 +199,27 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
             ...messagesToSend
         ];
 
+
+
         const requestOptions = {
             model: selectedModel,
             messages: apiMessages,
             stream: true,
             stream_options: { include_usage: true },
             provider: {
-                sort: 'throughput',
-                quantizations: ['fp8'],
+                sort: 'throughput'
+            },
+            reasoning: {
+                effort: 'none',
+                enabled: true,
+                exclude: false
             }
         };
 
         // Only add reasoning parameter if enabled and using the reasoning model
         if (reasoningEnabled) {
             requestOptions.reasoning = {
-                effort: 'medium',
+                effort: 'high',
                 enabled: true,
                 exclude: false
             };

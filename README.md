@@ -58,7 +58,7 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 - [Node.js](https://nodejs.org/) v18 or higher
 - A Discord bot token ([Discord Developer Portal](https://discord.com/developers/applications))
 - An OpenRouter API key ([OpenRouter](https://openrouter.ai/))
-- OpenAI API key for TTS
+- Minimax API key ([Minimax](http://minimax.io/))
 - Visual C++ Redistributable (Optional if you plan on using the JXR converter)
 
 ### Installation
@@ -78,15 +78,15 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
    
    Create a `.env` file in the root directory:
    ```env
-   # Required
    DISCORD_TOKEN=
    CLIENT_ID=
    OPENROUTER_API_KEY=
-   OPENROUTER_MODEL=deepseek/deepseek-v3.2-speciale
-   NON_THINKING_MODEL=deepseek/deepseek-v3.2
    OPENAI_API=
-   TTS_API=
-   KEMONO_SESSION_KEY= (Optional)
+   MINIMAX_API_KEY=
+   THINKING_MODEL=z-ai/glm-5
+   NON_THINKING_MODEL=deepseek/deepseek-v3.2
+   SST_MODEL=google/gemini-2.5-flash-lite-preview-09-2025
+   TTS_MODEL=speech-2.8-hd
    ```
 
 4. **Deploy slash commands**
@@ -96,7 +96,7 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 
 5. **Start the bot**
    ```bash
-   npm start
+   npm run start:auto
    ```
 
 ## Project Structure
@@ -144,10 +144,3 @@ LeeBotRenewed/
 ├── .gitignore
 └── package.json
 ```
-
-## Scripts
-
-| Script | Command | Description |
-|--------|---------|-------------|
-| Start | `npm run start:auto` | Run the bot with auto-restart |
-| Deploy | `npm run deploy` | Deploy/update slash commands to Discord |

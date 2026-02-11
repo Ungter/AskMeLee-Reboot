@@ -57,10 +57,11 @@ async function transcribeAudio(pcmBuffer) {
         // Convert PCM to base64 WAV
         const audioBase64 = pcmToBase64Wav(pcmBuffer);
 
-        console.log(`[STT] Sending ${pcmBuffer.length} bytes to Voxtral for transcription`);
+        console.log(`[STT] Sending ${pcmBuffer.length} bytes to SST for transcription`);
 
         const response = await openrouter.chat.completions.create({
-            model: config.voxtralModel,
+            //model: config.voxtralModel,
+            model: config.sstModel,
             messages: [{
                 role: 'user',
                 content: [
@@ -77,7 +78,7 @@ async function transcribeAudio(pcmBuffer) {
                     },
                 ],
             }],
-            max_tokens: 1000,
+            max_tokens: 5000,
         });
 
         const transcription = response.choices[0]?.message?.content?.trim();

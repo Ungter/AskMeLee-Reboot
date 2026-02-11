@@ -28,6 +28,7 @@ function getVoiceSession(userId, guildId) {
 
 /**
  * Get AI response for voice input (uses non-reasoning model)
+ * Two-step process: 1) Generate response, 2) Add tone modifiers
  * @param {string} userId 
  * @param {string} guildId 
  * @param {string} prompt 
@@ -45,40 +46,78 @@ async function getVoiceResponse(userId, guildId, prompt) {
         session.history = session.history.slice(-MAX_HISTORY);
     }
 
-    // Prepare system prompt for voice context
     const currentDateTime = new Date().toLocaleString();
-    const voiceSystemPrompt = `${config.systemPrompt}
-
-Current Date and Time: ${currentDateTime}
-
-IMPORTANT: You are responding via voice in a Discord voice channel. Keep your responses:
-- Concise (1-3 sentences when possible)
-- Natural and conversational
-- Avoid markdown, code blocks, or formatting
-- Avoid lists unless specifically asked
-- Speak as if having a conversation`;
 
     try {
         console.log(`[VoiceAI] Getting response for: "${prompt}"`);
 
-        const response = await openrouter.chat.completions.create({
-            model: config.nonThinkingModel, // Always use non-reasoning for voice
+        // STEP 1: Generate the response content
+        const contentSystemPrompt = `
+        You are Leila (Lee), a young female, flirty friend.
+
+Current Date and Time: ${currentDateTime}
+
+IMPORTANT: You are responding via voice. Keep your responses:
+- Concise
+- Natural and conversational
+- Avoid markdown, code blocks, any formatting, any tone modifiers like (giggles).
+- Avoid lists unless specifically asked
+- Speak as if having a conversation`;
+
+        const contentResponse = await openrouter.chat.completions.create({
+            //model: config.nonThinkingModel,
+            model: "mistralai/mistral-small-creative",
             messages: [
-                { role: 'system', content: voiceSystemPrompt },
+                { role: 'system', content: contentSystemPrompt },
                 ...session.history,
             ],
-            max_tokens: 1000, // Keep responses short for voice
+            max_tokens: 1000,
         });
 
-        const content = response.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+        const rawContent = contentResponse.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+        console.log(`[VoiceAI] Raw response: "${rawContent}"`);
 
-        // Add assistant response to history
-        session.history.push({ role: 'assistant', content });
+        /*
+        1. EMOTIONS - Wrap phrases with {emotion}...{/emotion}. Options: happy, sad, angry, fearful, disgusted, surprised, neutral, fluent
+       Example: {happy}Yay! I won a lottery today!{/happy}
+        */
 
-        console.log(`[VoiceAI] Response: "${content}"`);
+        const toneSystemPrompt = `You are a tone modifier assistant. Your job is to take a response and add appropriate tone modifiers for text-to-speech synthesis.
 
-        // Clean response for TTS (remove any accidental markdown)
-        const cleanedContent = content
+Available tone modifiers:
+
+2. SOUND TAGS - Add natural vocal sounds in parentheses, ONLY options: (laughs), (chuckle), (coughs), (clear-throat), (groans), (breath), (pant), (inhale), (exhale), (gasps), (sniffs), (sighs), (snorts), (burps), (lip-smacking), (humming), (hissing), (emm), (sneezes)
+   Example: (laughs) That's so funny!
+   NOTE: do NOT write (pause) or (pauses) or (pauses slightly)
+
+3. PAUSES - Add natural pauses with <#seconds#>. Options: 0.25, 0.5, 0.75, 1
+   Example: Well <#0.5#> let me think about that.
+   NOTE: do NOT write (pause) or (pauses) or (pauses slightly)
+
+Rules:
+- Keep the original meaning intact
+- Do not combine tone modifiers with each other; ONE WORD ONLY, for example, do not use use (signs happily)
+- Add modifiers naturally and sparingly - don't overdo it
+- Match the emotional tone of the content
+- Only output the modified text, nothing else`;
+
+        const toneResponse = await openrouter.chat.completions.create({
+            model: "qwen/qwen3-next-80b-a3b-instruct",
+            messages: [
+                { role: 'system', content: toneSystemPrompt },
+                { role: 'user', content: `${rawContent}` },
+            ],
+            max_tokens: 10000,
+        });
+
+        const modifiedContent = toneResponse.choices[0]?.message?.content || rawContent;
+        console.log(`[VoiceAI] Modified response: "${modifiedContent}"`);
+
+        // Add assistant response to history (store the raw content, not the modified one)
+        session.history.push({ role: 'assistant', content: rawContent });
+
+        // Clean any accidental markdown from the modified response
+        const cleanedContent = modifiedContent
             .replace(/```[\s\S]*?```/g, 'code block omitted')
             .replace(/\*\*(.*?)\*\*/g, '$1')
             .replace(/\*(.*?)\*/g, '$1')
