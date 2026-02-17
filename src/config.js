@@ -26,4 +26,5 @@ module.exports = {
     minimaxApiKey: process.env.MINIMAX_API_KEY,
     voiceId: process.env.VOICE_ID,
     wakeWord: 'hey lee',
+    imageGenModel: process.env.IMAGE_GEN_MODEL,
 };
