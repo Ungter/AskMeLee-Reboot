@@ -262,5 +262,6 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
 module.exports = {
     streamResponse,
     needsOnlineSearch,
+    needsContext,
 };
 
