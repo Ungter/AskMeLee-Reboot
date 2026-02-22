@@ -6,6 +6,20 @@ const openai = new OpenAI({
     apiKey: config.openRouterApiKey,
 });
 
+const CLASSIFIER_TIMEOUT_MS = 5000;
+
+function withTimeout(promise, fallbackValue, classifierName) {
+    return Promise.race([
+        promise,
+        new Promise((resolve) => {
+            setTimeout(() => {
+                console.warn(`[Classifier] ${classifierName} timed out after ${CLASSIFIER_TIMEOUT_MS}ms, using fallback: ${fallbackValue}`);
+                resolve(fallbackValue);
+            }, CLASSIFIER_TIMEOUT_MS);
+        })
+    ]);
+}
+
 /**
  * Check if a query needs online/web search using a lightweight classifier model.
  * Uses structured outputs for reliable parsing.
@@ -13,8 +27,9 @@ const openai = new OpenAI({
  * @returns {Promise<boolean>} - True if online search is needed
  */
 async function needsOnlineSearch(query) {
-    try {
-        const response = await openai.chat.completions.create({
+    return withTimeout((async () => {
+        try {
+            const response = await openai.chat.completions.create({
             model: config.classifierModel,
             messages: [
                 {
@@ -66,17 +81,18 @@ async function needsOnlineSearch(query) {
             }
         });
 
-        const content = response.choices[0]?.message?.content;
-        if (content) {
-            const parsed = JSON.parse(content);
-            console.log(`[Classifier] Query: "${query.slice(0, 50)}..." => needs_online: ${parsed.needs_online} (${parsed.reason})`);
-            return parsed.needs_online;
+            const content = response?.choices?.[0]?.message?.content;
+            if (content) {
+                const parsed = JSON.parse(content);
+                console.log(`[Classifier] Query: "${query.slice(0, 50)}..." => needs_online: ${parsed.needs_online} (${parsed.reason})`);
+                return parsed.needs_online;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error in online search classifier:', error);
+            return false; // Default to no online search on error
         }
-        return false;
-    } catch (error) {
-        console.error('Error in online search classifier:', error);
-        return false; // Default to no online search on error
-    }
+    })(), false, 'needsOnlineSearch');
 }
 
 /**
@@ -86,8 +102,9 @@ async function needsOnlineSearch(query) {
  * @returns {Promise<boolean>} - True if context is needed
  */
 async function needsContext(query) {
-    try {
-        const response = await openai.chat.completions.create({
+    return withTimeout((async () => {
+        try {
+            const response = await openai.chat.completions.create({
             model: config.classifierModel,
             messages: [
                 {
@@ -136,17 +153,18 @@ async function needsContext(query) {
             }
         });
 
-        const content = response.choices[0]?.message?.content;
-        if (content) {
-            const parsed = JSON.parse(content);
-            console.log(`[Classifier] Query: "${query.slice(0, 50)}..." => needs_context: ${parsed.needs_context} (${parsed.reason})`);
-            return parsed.needs_context;
+            const content = response?.choices?.[0]?.message?.content;
+            if (content) {
+                const parsed = JSON.parse(content);
+                console.log(`[Classifier] Query: "${query.slice(0, 50)}..." => needs_context: ${parsed.needs_context} (${parsed.reason})`);
+                return parsed.needs_context;
+            }
+            return true; // Default to including context on parsing failure
+        } catch (error) {
+            console.error('Error in context classifier:', error);
+            return true; // Default to including context on error
         }
-        return true; // Default to including context on parsing failure
-    } catch (error) {
-        console.error('Error in context classifier:', error);
-        return true; // Default to including context on error
-    }
+    })(), true, 'needsContext');
 }
 
 /**
