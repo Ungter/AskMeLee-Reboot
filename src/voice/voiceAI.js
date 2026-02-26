@@ -53,7 +53,7 @@ async function getVoiceResponse(userId, guildId, prompt) {
 
         // STEP 1: Generate the response content
         const contentSystemPrompt = `
-        You are Leila (Lee), a young female, flirty friend.
+        You are Leila (Lee), a young female.
 
 Current Date and Time: ${currentDateTime}
 
@@ -82,7 +82,7 @@ IMPORTANT: You are responding via voice. Keep your responses:
        Example: {happy}Yay! I won a lottery today!{/happy}
         */
 
-        const toneSystemPrompt = `You are a tone modifier assistant. Your job is to take a response and add appropriate tone modifiers for text-to-speech synthesis.
+        const toneSystemPrompt = `You are a tone modifier assistant. Your job is to take a response and add appropriate tone modifiers for text-to-speech synthesis, along with making sure the response is natural, conversational has no markdown or code blocks, and has no lists.
 
 Available tone modifiers:
 
@@ -102,12 +102,17 @@ Rules:
 - Only output the modified text, nothing else`;
 
         const toneResponse = await openrouter.chat.completions.create({
-            model: "qwen/qwen3-next-80b-a3b-instruct",
+            model: "openai/gpt-oss-20b",
             messages: [
                 { role: 'system', content: toneSystemPrompt },
                 { role: 'user', content: `${rawContent}` },
             ],
-            max_tokens: 10000,
+            reasoning: {
+                effort: 'low',
+                enabled: true,
+                exclude: false
+            },
+            max_tokens: 1000,
         });
 
         const modifiedContent = toneResponse.choices[0]?.message?.content || rawContent;

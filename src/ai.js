@@ -30,11 +30,11 @@ async function needsOnlineSearch(query) {
     return withTimeout((async () => {
         try {
             const response = await openai.chat.completions.create({
-            model: config.classifierModel,
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are a classifier that determines if a user query requires real-time or up-to-date information from the internet.
+                model: config.classifierModel,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are a classifier that determines if a user query requires real-time or up-to-date information from the internet.
 
                             Answer YES if the query asks about:
                             - Current events, news, or recent happenings
@@ -51,35 +51,35 @@ async function needsOnlineSearch(query) {
                             - Code help or programming questions
                             - Personal advice or opinions
                             - Explanations of how things work`
-                },
-                {
-                    role: 'user',
-                    content: query
-                }
-            ],
-            response_format: {
-                type: 'json_schema',
-                json_schema: {
-                    name: 'online_check',
-                    strict: true,
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            needs_online: {
-                                type: 'boolean',
-                                description: 'Whether the query requires real-time internet data'
+                    },
+                    {
+                        role: 'user',
+                        content: query
+                    }
+                ],
+                response_format: {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: 'online_check',
+                        strict: true,
+                        schema: {
+                            type: 'object',
+                            properties: {
+                                needs_online: {
+                                    type: 'boolean',
+                                    description: 'Whether the query requires real-time internet data'
+                                },
+                                reason: {
+                                    type: 'string',
+                                    description: 'Brief reason for the decision'
+                                }
                             },
-                            reason: {
-                                type: 'string',
-                                description: 'Brief reason for the decision'
-                            }
-                        },
-                        required: ['needs_online', 'reason'],
-                        additionalProperties: false
+                            required: ['needs_online', 'reason'],
+                            additionalProperties: false
+                        }
                     }
                 }
-            }
-        });
+            });
 
             const content = response?.choices?.[0]?.message?.content;
             if (content) {
@@ -105,11 +105,11 @@ async function needsContext(query) {
     return withTimeout((async () => {
         try {
             const response = await openai.chat.completions.create({
-            model: config.classifierModel,
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are a classifier that determines if a user query requires previous conversation context to answer properly.
+                model: config.classifierModel,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are a classifier that determines if a user query requires previous conversation context to answer properly.
 
                             Answer YES if the query:
                             - References something mentioned earlier (e.g., "what about that?", "can you explain more?", "the previous one")
@@ -123,35 +123,35 @@ async function needsContext(query) {
                             - Contains all necessary information to answer
                             - Is a greeting or simple statement
                             - Is self-contained and doesn't reference anything prior`
-                },
-                {
-                    role: 'user',
-                    content: query
-                }
-            ],
-            response_format: {
-                type: 'json_schema',
-                json_schema: {
-                    name: 'context_check',
-                    strict: true,
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            needs_context: {
-                                type: 'boolean',
-                                description: 'Whether the query requires previous conversation history'
+                    },
+                    {
+                        role: 'user',
+                        content: query
+                    }
+                ],
+                response_format: {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: 'context_check',
+                        strict: true,
+                        schema: {
+                            type: 'object',
+                            properties: {
+                                needs_context: {
+                                    type: 'boolean',
+                                    description: 'Whether the query requires previous conversation history'
+                                },
+                                reason: {
+                                    type: 'string',
+                                    description: 'Brief reason for the decision'
+                                }
                             },
-                            reason: {
-                                type: 'string',
-                                description: 'Brief reason for the decision'
-                            }
-                        },
-                        required: ['needs_context', 'reason'],
-                        additionalProperties: false
+                            required: ['needs_context', 'reason'],
+                            additionalProperties: false
+                        }
                     }
                 }
-            }
-        });
+            });
 
             const content = response?.choices?.[0]?.message?.content;
             if (content) {
@@ -282,4 +282,3 @@ module.exports = {
     needsOnlineSearch,
     needsContext,
 };
-
