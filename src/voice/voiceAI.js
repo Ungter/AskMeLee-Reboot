@@ -108,7 +108,7 @@ Rules:
                 { role: 'user', content: `${rawContent}` },
             ],
             reasoning: {
-                effort: 'low',
+                effort: 'minimal',
                 enabled: true,
                 exclude: false
             },

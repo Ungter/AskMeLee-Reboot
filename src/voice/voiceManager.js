@@ -24,67 +24,105 @@ async function joinVC(channel, textChannel) {
         return existingConnection;
     }
 
-    console.log(`[Voice] Attempting to join ${channel.name} in ${channel.guild.name}...`);
+    const MAX_RETRIES = 3;
 
-    const connection = joinVoiceChannel({
-        channelId: channel.id,
-        guildId: guildId,
-        adapterCreator: channel.guild.voiceAdapterCreator,
-        selfDeaf: false, // Need to hear audio
-        selfMute: false,
-    });
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        console.log(`[Voice] Attempting to join ${channel.name} in ${channel.guild.name} (attempt ${attempt}/${MAX_RETRIES})...`);
 
-    try {
-        // Wait for connection to be ready (increased timeout to 60s)
-        await entersState(connection, VoiceConnectionStatus.Ready, 60_000);
-        console.log(`[Voice] Connected to voice channel: ${channel.name} in ${channel.guild.name}`);
+        // Clean up any lingering connection from a previous failed attempt
+        const staleConnection = getVoiceConnection(guildId);
+        if (staleConnection) {
+            try { staleConnection.destroy(); } catch { }
+        }
 
-        // Set up audio receiver
-        const receiver = connection.receiver;
-
-        // Store session info
-        voiceSessions.set(guildId, {
-            connection,
-            textChannel,
+        const connection = joinVoiceChannel({
             channelId: channel.id,
-            receiver,
-            userBuffers: new Map(),
+            guildId: guildId,
+            adapterCreator: channel.guild.voiceAdapterCreator,
+            selfDeaf: false, // Need to hear audio
+            selfMute: false,
+            debug: true,
         });
 
-        // Handle speaking events
-        receiver.speaking.on('start', (userId) => {
-            console.log(`[Voice] User ${userId} started speaking`);
-            const session = voiceSessions.get(guildId);
-            if (session) {
-                createAudioReceiver(receiver, userId, guildId, session);
-            }
+        // Log all state transitions for debugging
+        connection.on('stateChange', (oldState, newState) => {
+            console.log(`[Voice] Connection state: ${oldState.status} -> ${newState.status}`);
         });
 
-        // Handle connection state changes
-        connection.on(VoiceConnectionStatus.Disconnected, async () => {
-            try {
-                await Promise.race([
-                    entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
-                    entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
-                ]);
-                // Reconnecting successfully
-            } catch (error) {
-                // Disconnected and not reconnecting
-                connection.destroy();
+        connection.on('debug', (message) => {
+            console.log(`[Voice Debug] ${message}`);
+        });
+
+        connection.on('error', (error) => {
+            console.error(`[Voice] Connection error:`, error);
+        });
+
+        try {
+            // Wait for connection to be ready (15s per attempt)
+            await entersState(connection, VoiceConnectionStatus.Ready, 15_000);
+            console.log(`[Voice] Connected to voice channel: ${channel.name} in ${channel.guild.name}`);
+
+            // Set up audio receiver
+            const receiver = connection.receiver;
+
+            // Store session info
+            voiceSessions.set(guildId, {
+                connection,
+                textChannel,
+                channelId: channel.id,
+                receiver,
+                userBuffers: new Map(),
+            });
+
+            // Handle speaking events
+            receiver.speaking.on('start', (userId) => {
+                console.log(`[Voice] User ${userId} started speaking`);
+                const session = voiceSessions.get(guildId);
+                if (session) {
+                    createAudioReceiver(receiver, userId, guildId, session);
+                }
+            });
+
+            // Handle connection state changes
+            connection.on(VoiceConnectionStatus.Disconnected, async () => {
+                try {
+                    await Promise.race([
+                        entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
+                        entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
+                    ]);
+                    // Reconnecting successfully
+                } catch (error) {
+                    // Disconnected and not reconnecting
+                    if (connection.state.status !== VoiceConnectionStatus.Destroyed) {
+                        connection.destroy();
+                    }
+                    voiceSessions.delete(guildId);
+                    console.log(`[Voice] Disconnected from ${channel.guild.name}`);
+                }
+            });
+
+            connection.on(VoiceConnectionStatus.Destroyed, () => {
                 voiceSessions.delete(guildId);
-                console.log(`[Voice] Disconnected from ${channel.guild.name}`);
+                console.log(`[Voice] Connection destroyed for ${channel.guild.name}`);
+            });
+
+            return connection;
+        } catch (error) {
+            console.warn(`[Voice] Attempt ${attempt}/${MAX_RETRIES} failed: ${error.message}`);
+
+            // Safely destroy - connection may already be destroyed by the library
+            if (connection.state.status !== VoiceConnectionStatus.Destroyed) {
+                connection.destroy();
             }
-        });
 
-        connection.on(VoiceConnectionStatus.Destroyed, () => {
-            voiceSessions.delete(guildId);
-            console.log(`[Voice] Connection destroyed for ${channel.guild.name}`);
-        });
+            // If last attempt, throw the error
+            if (attempt === MAX_RETRIES) {
+                throw error;
+            }
 
-        return connection;
-    } catch (error) {
-        connection.destroy();
-        throw error;
+            // Wait a bit before retrying
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
     }
 }
 
