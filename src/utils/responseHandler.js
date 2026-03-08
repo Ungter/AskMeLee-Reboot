@@ -13,8 +13,9 @@ const contentCache = new Map();
  * @param {string} userPrompt - The user's input.
  * @param {Object} session - The user's session object.
  * @param {boolean|null} reasoningOverride - Override for reasoning setting (true/false/null).
+ * @param {{ streamResponseFn?: function }} options - Optional behavior overrides.
  */
-async function handleAIResponse(target, userPrompt, session, reasoningOverride = null) {
+async function handleAIResponse(target, userPrompt, session, reasoningOverride = null, options = {}) {
     // Check if it's an interaction (Command, ContextMenu, or ModalSubmit)
     const isInteraction = target.isCommand?.() || target.isModalSubmit?.() || target.isRepliable?.();
 
@@ -54,6 +55,8 @@ async function handleAIResponse(target, userPrompt, session, reasoningOverride =
     let isReasoningPhase = true;
     let lastUsage = null;
     let lastUpdate = Date.now();
+    let finalized = false;
+    let pendingUpdate = Promise.resolve();
 
     // State for code block parsing
     let lastProcessedIndex = 0;
@@ -325,6 +328,32 @@ async function handleAIResponse(target, userPrompt, session, reasoningOverride =
         }
     };
 
+    const queueUpdate = (content, reasoning, usage, final = false) => {
+        pendingUpdate = pendingUpdate
+            .then(async () => {
+                if (finalized && !final) return;
+
+                if (isReasoningPhase && content && content.trim().length > 0) {
+                    isReasoningPhase = false;
+                }
+
+                lastContent = content;
+                lastReasoning = reasoning;
+                if (usage) lastUsage = usage;
+
+                await updateMessage(content, reasoning, lastUsage, final);
+
+                if (final) {
+                    finalized = true;
+                }
+            })
+            .catch((error) => {
+                console.error('Error while queueing response update:', error);
+            });
+
+        return pendingUpdate;
+    };
+
     // Trim history to prevent exceeding context limits
     // Keep last 20 messages (10 exchanges) to stay well under token limits
     const MAX_HISTORY_LENGTH = 20;
@@ -332,21 +361,48 @@ async function handleAIResponse(target, userPrompt, session, reasoningOverride =
         session.history = session.history.slice(-MAX_HISTORY_LENGTH);
     }
 
+    const streamResponseFn = options.streamResponseFn || ai.streamResponse;
+
+    let streamError = null;
+
     try {
-        await ai.streamResponse(session.history, (content, reasoning, usage) => {
-            // Detect phase switch
-            if (isReasoningPhase && content && content.trim().length > 0) {
-                isReasoningPhase = false;
-            }
-
-            lastContent = content;
-            lastReasoning = reasoning;
-            if (usage) lastUsage = usage;
-            updateMessage(content, reasoning, lastUsage, false);
+        await streamResponseFn(session.history, (content, reasoning, usage) => {
+            queueUpdate(content, reasoning, usage, false);
         }, reasoningEnabled);
+    } catch (error) {
+        console.error('Error generating response:', error);
+        streamError = error;
+    }
 
+    // Always wait for any pending updates to finish before final edit
+    try {
+        await pendingUpdate;
+    } catch (e) {
+        console.error('Error in pending updates:', e);
+    }
+
+    if (streamError) {
+        const errorMessage = lastContent && lastContent.trim().length > 0
+            ? lastContent
+            : 'Sorry, I encountered an error processing your request.';
+        const errorColor = lastContent && lastContent.trim().length > 0 ? 0xF90F16 : 0xFF0000;
+        const errorPayload = { content: '', embeds: [new EmbedBuilder().setColor(errorColor).setDescription(errorMessage)], components: [] };
+        const lastMsg = sentMessages[sentMessages.length - 1];
+        if (lastMsg) {
+            try {
+                if (isInteraction && sentMessages.length === 1) {
+                    await target.editReply(errorPayload);
+                } else {
+                    await lastMsg.edit(errorPayload);
+                }
+            } catch (e) { console.error(e); }
+        }
+        if (lastContent && lastContent.trim().length > 0) {
+            session.history.push({ role: 'assistant', content: lastContent });
+        }
+    } else {
         // Final update
-        await updateMessage(lastContent, lastReasoning, lastUsage, true);
+        await queueUpdate(lastContent, lastReasoning, lastUsage, true);
 
         if (lastUsage) {
             const user = isInteraction ? target.user : target.author;
@@ -363,21 +419,6 @@ async function handleAIResponse(target, userPrompt, session, reasoningOverride =
             if (lastMsg.embeds && lastMsg.embeds.length > 0) {
                 contentCache.set(lastMsg.id, lastMsg.embeds[0].description);
             }
-        }
-
-    } catch (error) {
-        console.error('Error generating response:', error);
-        const errorPayload = { content: '', embeds: [new EmbedBuilder().setColor(0xFF0000).setDescription('Sorry, I encountered an error processing your request.')] };
-        // Try to update the last message
-        const lastMsg = sentMessages[sentMessages.length - 1];
-        if (lastMsg) {
-            try {
-                if (isInteraction && sentMessages.length === 1) {
-                    await target.editReply(errorPayload);
-                } else {
-                    await lastMsg.edit(errorPayload);
-                }
-            } catch (e) { console.error(e); }
         }
     }
 }

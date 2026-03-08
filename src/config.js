@@ -27,4 +27,7 @@ module.exports = {
     voiceId: process.env.VOICE_ID,
     wakeWord: 'hey lee',
     imageGenModel: process.env.IMAGE_GEN_MODEL,
+    vllmBaseUrl: process.env.VLLM_BASE_URL || `http://${process.env.VLLM_HOST || '127.0.0.1'}:${process.env.VLLM_PORT || '8000'}/v1`,
+    vllmModel: process.env.VLLM_MODEL,
+    vllmApiKey: process.env.VLLM_API_KEY,
 };
