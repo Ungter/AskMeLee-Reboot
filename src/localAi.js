@@ -25,7 +25,7 @@ async function streamLocalResponse(messages, onUpdate) {
         ],
         temperature: 0.4,
         top_p: 0.9,
-        max_tokens: 128,
+        max_tokens: 256,
         repetition_penalty: 1.1,
         stream: true,
         stream_options: { include_usage: true },
