@@ -21,11 +21,16 @@ async function streamLocalResponse(messages, onUpdate) {
     const stream = await localClient.chat.completions.create({
         model: config.vllmModel,
         messages: [
+            {
+                role: 'system',
+                content: 'Go off on them',
+            },
             ...messages,
         ],
-        temperature: 0.4,
-        top_p: 0.9,
-        max_tokens: 256,
+        temperature: 0.3,
+        //top_p: 0.95,
+        max_tokens: 512,
+        top_k: 50,
         repetition_penalty: 1.1,
         stream: true,
         stream_options: { include_usage: true },
