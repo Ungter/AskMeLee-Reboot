@@ -7,17 +7,72 @@ const openai = new OpenAI({
     apiKey: config.openRouterApiKey,
 });
 
-/**
- * Create a visual progress bar
- * @param {number} progress - Progress percentage (0-100)
- * @returns {string} Progress bar string
- */
-function createProgressBar(progress) {
-    const barLength = 20;
-    const filledLength = Math.round((progress / 100) * barLength);
-    const emptyLength = barLength - filledLength;
-    const bar = '█'.repeat(filledLength) + '░'.repeat(emptyLength);
-    return `[${bar}]`;
+const IMAGE_RESPONSE_FIELDS = new Set(['image_url', 'url', 'b64_json', 'base64', 'data']);
+
+function looksLikeBase64(value) {
+    return typeof value === 'string'
+        && value.length > 100
+        && /^[A-Za-z0-9+/=\r\n]+$/.test(value);
+}
+
+function extractImageCandidates(value, results = []) {
+    if (!value) {
+        return results;
+    }
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+
+        if (
+            trimmed.startsWith('data:image/')
+            || trimmed.startsWith('http://')
+            || trimmed.startsWith('https://')
+            || looksLikeBase64(trimmed)
+        ) {
+            results.push(trimmed);
+        }
+
+        return results;
+    }
+
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            extractImageCandidates(item, results);
+        }
+        return results;
+    }
+
+    if (typeof value === 'object') {
+        for (const [key, nestedValue] of Object.entries(value)) {
+            if (IMAGE_RESPONSE_FIELDS.has(key)) {
+                extractImageCandidates(nestedValue, results);
+                continue;
+            }
+
+            if (nestedValue && typeof nestedValue === 'object') {
+                extractImageCandidates(nestedValue, results);
+            }
+        }
+    }
+
+    return results;
+}
+
+function toDiscordAttachment(imageData) {
+    if (!imageData) {
+        return null;
+    }
+
+    if (imageData.startsWith('data:')) {
+        const base64Data = imageData.split(',')[1];
+        return Buffer.from(base64Data, 'base64');
+    }
+
+    if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+        return imageData;
+    }
+
+    return Buffer.from(imageData, 'base64');
 }
 
 
@@ -86,7 +141,7 @@ module.exports = {
         try {
             console.log(`[Imagine] Generating image with prompt: "${prompt}"`);
 
-            const stream = await openai.chat.completions.create({
+            const response = await openai.chat.completions.create({
                 model: config.imageGenModel,
                 messages: [
                     {
@@ -98,89 +153,20 @@ module.exports = {
                 image_config: {
                     aspect_ratio: finalAspectRatio,
                 },
-                stream: true,
             });
 
             console.log(`[Imagine] Using aspect ratio: ${finalAspectRatio} (original: ${aspectRatio}, orientation: ${orientation})`);
 
-            let finalImageData = '';
-            let lastUpdateTime = Date.now();
-            let lastDisplayedImage = null;
-
-            // Process the stream
-            for await (const chunk of stream) {
-                const delta = chunk.choices?.[0]?.delta;
-                const contentDelta = delta?.content || '';
-
-                // Accumulate final image data from content
-                finalImageData += contentDelta;
-
-                // Check for progressive images in delta.images
-                if (delta?.images && delta.images.length > 0) {
-                    // Get the latest progressive image
-                    const latestImage = delta.images[delta.images.length - 1];
-                    const imageUrl = latestImage.image_url?.url;
-
-                    if (imageUrl) {
-                        // Update Discord message every 3 seconds with the progressive image
-                        const now = Date.now();
-                        if (now - lastUpdateTime >= 3000) {
-                            lastUpdateTime = now;
-                            lastDisplayedImage = imageUrl;
-
-                            try {
-                                // Convert base64 data URL to Buffer if needed
-                                let imageAttachment;
-                                if (imageUrl.startsWith('data:')) {
-                                    // Extract base64 from data URL (data:image/png;base64,...)
-                                    const base64Data = imageUrl.split(',')[1];
-                                    imageAttachment = Buffer.from(base64Data, 'base64');
-                                } else if (imageUrl.startsWith('http')) {
-                                    // If it's a regular URL, use it directly
-                                    imageAttachment = imageUrl;
-                                } else {
-                                    // Assume it's raw base64
-                                    imageAttachment = Buffer.from(imageUrl, 'base64');
-                                }
-
-                                await interaction.editReply({
-                                    content: `**Generating image...**\n${prompt}\n\n⏳ *Progressive preview:*`,
-                                    files: [{
-                                        attachment: imageAttachment,
-                                        name: 'progressive_image.png'
-                                    }]
-                                });
-                                console.log(`[Imagine] Updated with progressive image from stream`);
-                            } catch (err) {
-                                console.error(`[Imagine] Error updating progressive image:`, err.message);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Use finalImageData if available, otherwise fall back to last displayed progressive image
-            let imageData = finalImageData || lastDisplayedImage;
+            const imageCandidates = extractImageCandidates(response);
+            const imageData = imageCandidates.at(-1) || null;
 
             if (!imageData) {
                 throw new Error('No image data returned from API');
             }
 
-            // Convert final image data to Buffer if it's base64
-            let finalImageAttachment;
-            if (imageData.startsWith('data:')) {
-                // Extract base64 from data URL
-                const base64Data = imageData.split(',')[1];
-                finalImageAttachment = Buffer.from(base64Data, 'base64');
-            } else if (imageData.startsWith('http')) {
-                // If it's a URL, use it directly
-                finalImageAttachment = imageData;
-            } else {
-                // Assume it's raw base64
-                finalImageAttachment = Buffer.from(imageData, 'base64');
-            }
+            const finalImageAttachment = toDiscordAttachment(imageData);
 
-            console.log(`[Imagine] Successfully generated image${finalImageData ? ' (converted from base64)' : ' (using URL)'}`);
+            console.log(`[Imagine] Successfully generated image${typeof imageData === 'string' && imageData.startsWith('http') ? ' (using URL)' : ' (using encoded image data)'}`);
 
             // Display the final image
             await interaction.editReply({
