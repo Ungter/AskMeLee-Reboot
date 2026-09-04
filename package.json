@@ -8,7 +8,8 @@
     "deploy": "node src/deploy-commands.js",
     "start": "node src/index.js",
     "start:auto": "node src/start.js",
-    "start:local": "node src/start.js --with-vllm"
+    "start:local": "node src/start.js --with-vllm",
+    "serve:local": "node src/localAi.js"
   },
   "keywords": [],
   "author": "",

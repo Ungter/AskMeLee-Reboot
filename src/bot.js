@@ -58,9 +58,14 @@ client.on('messageCreate', async (message) => {
 
     console.log(`[Message] User ${message.author.id} (${message.author.tag}) requested AI response in channel ${message.channel.id}`);
 
-    const session = sessions.getSession(message.author.id, message.channel.id);
+    const session = sessions.getSession(message.author.id, message.channel.id, 'cloud');
+
+    // Pick up an image attachment if the user attached one to their message
+    const imageAttachment = message.attachments.find(att => att.contentType?.startsWith('image/'));
+    const imageUrl = imageAttachment?.url;
+
     // Use the shared handler
-    await handleAIResponse(message, content, session);
+    await handleAIResponse(message, content, session, null, { imageUrl });
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -86,201 +91,6 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     if (!interaction.isButton()) return;
-
-    // Handle Kemono top pagination buttons
-    if (interaction.customId.startsWith('kemono_top_prev_') || interaction.customId.startsWith('kemono_top_next_')) {
-        try {
-            await interaction.deferUpdate();
-
-            const kemonoTop = require('./commands/kemono/kemonoTop');
-            const { paginationCache, ITEMS_PER_PAGE, buildEmbed, buildButtons } = kemonoTop;
-
-            // Extract cache key from customId
-            const isPrev = interaction.customId.startsWith('kemono_top_prev_');
-            const cacheKey = interaction.customId.replace(isPrev ? 'kemono_top_prev_' : 'kemono_top_next_', '');
-
-            const cached = paginationCache.get(cacheKey);
-            if (!cached) {
-                await interaction.followUp({ content: '❌ Pagination data expired. Please run the command again.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            // Check user ownership
-            if (cached.userId !== interaction.user.id) {
-                await interaction.followUp({ content: '❌ Only the user who ran this command can navigate.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            // Update page
-            const totalPages = Math.ceil(cached.creators.length / ITEMS_PER_PAGE);
-            if (isPrev && cached.page > 0) {
-                cached.page--;
-            } else if (!isPrev && cached.page < totalPages - 1) {
-                cached.page++;
-            }
-
-            const embed = buildEmbed(cached.creators, cached.page);
-            const row = buildButtons(cacheKey, cached.page, totalPages);
-
-            await interaction.editReply({ embeds: [embed], components: [row] });
-        } catch (error) {
-            console.error('[Kemono Pagination] Error:', error);
-        }
-        return;
-    }
-
-    // Handle Kemono creators pagination buttons
-    if (interaction.customId.startsWith('kemono_creators_prev_') || interaction.customId.startsWith('kemono_creators_next_')) {
-        try {
-            await interaction.deferUpdate();
-
-            const kemonoSearch = require('./commands/kemono/kemonoSearch');
-            const { searchCache, buildCreatorsEmbed, ITEMS_PER_PAGE } = kemonoSearch;
-
-            const isPrev = interaction.customId.startsWith('kemono_creators_prev_');
-            const cacheKey = interaction.customId.replace(isPrev ? 'kemono_creators_prev_' : 'kemono_creators_next_', '');
-
-            const cached = searchCache.get(cacheKey);
-            if (!cached) {
-                await interaction.followUp({ content: '❌ Data expired. Please run the command again.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            if (cached.userId !== interaction.user.id) {
-                await interaction.followUp({ content: '❌ Only the user who ran this command can navigate.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            const totalPages = Math.ceil(cached.creators.length / ITEMS_PER_PAGE);
-            if (isPrev && cached.page > 0) {
-                cached.page--;
-            } else if (!isPrev && cached.page < totalPages - 1) {
-                cached.page++;
-            }
-
-            const { embed, components } = buildCreatorsEmbed(cached.creators, cached.page, cached.artistName, cacheKey);
-            await interaction.editReply({ embeds: [embed], components });
-        } catch (error) {
-            console.error('[Kemono Creators Pagination] Error:', error);
-        }
-        return;
-    }
-
-    // Handle Kemono creator selection buttons
-    if (interaction.customId.startsWith('kemono_creator_select_')) {
-        try {
-            await interaction.deferUpdate();
-
-            const kemonoSearch = require('./commands/kemono/kemonoSearch');
-            const { searchCache, handleCreatorSelection, ITEMS_PER_PAGE } = kemonoSearch;
-
-            // Parse: kemono_creator_select_{index}_{cacheKey}
-            const parts = interaction.customId.split('_');
-            const index = parseInt(parts[3]);
-            const cacheKey = parts.slice(4).join('_');
-
-            const cached = searchCache.get(cacheKey);
-            if (!cached) {
-                await interaction.followUp({ content: '❌ Search data expired. Please run the command again.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            // Check user ownership
-            if (cached.userId !== interaction.user.id) {
-                await interaction.followUp({ content: '❌ Only the user who ran this command can select.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            // Get creator at current page + index
-            const creatorIndex = cached.page * ITEMS_PER_PAGE + index;
-            const creator = cached.creators[creatorIndex];
-            if (!creator) {
-                await interaction.followUp({ content: '❌ Invalid selection.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            await handleCreatorSelection(interaction, creator);
-        } catch (error) {
-            console.error('[Kemono Creator Select] Error:', error);
-        }
-        return;
-    }
-
-    // Handle Kemono posts pagination buttons
-    if (interaction.customId.startsWith('kemono_posts_prev_') || interaction.customId.startsWith('kemono_posts_next_')) {
-        try {
-            await interaction.deferUpdate();
-
-            const kemonoSearch = require('./commands/kemono/kemonoSearch');
-            const { postsCache, buildPostsEmbed, ITEMS_PER_PAGE } = kemonoSearch;
-
-            const isPrev = interaction.customId.startsWith('kemono_posts_prev_');
-            const cacheKey = interaction.customId.replace(isPrev ? 'kemono_posts_prev_' : 'kemono_posts_next_', '');
-
-            const cached = postsCache.get(cacheKey);
-            if (!cached) {
-                await interaction.followUp({ content: '❌ Data expired. Please run the command again.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            if (cached.userId !== interaction.user.id) {
-                await interaction.followUp({ content: '❌ Only the user who ran this command can navigate.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            const totalPages = Math.ceil(cached.posts.length / ITEMS_PER_PAGE);
-            if (isPrev && cached.page > 0) {
-                cached.page--;
-            } else if (!isPrev && cached.page < totalPages - 1) {
-                cached.page++;
-            }
-
-            const { embed, components } = buildPostsEmbed(cached.creator, cached.posts, cached.page, cacheKey);
-            await interaction.editReply({ embeds: [embed], components });
-        } catch (error) {
-            console.error('[Kemono Posts Pagination] Error:', error);
-        }
-        return;
-    }
-
-    // Handle Kemono post view buttons
-    if (interaction.customId.startsWith('kemono_post_view_')) {
-        try {
-            const kemonoSearch = require('./commands/kemono/kemonoSearch');
-            const { postsCache, handlePostFetch, ITEMS_PER_PAGE } = kemonoSearch;
-
-            // Parse: kemono_post_view_{index}_{cacheKey}
-            const parts = interaction.customId.split('_');
-            const index = parseInt(parts[3]);
-            const cacheKey = parts.slice(4).join('_');
-
-            const cached = postsCache.get(cacheKey);
-            if (!cached) {
-                await interaction.reply({ content: '❌ Data expired. Please run the command again.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            if (cached.userId !== interaction.user.id) {
-                await interaction.reply({ content: '❌ Only the user who ran this command can select posts.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            // Get the post at the current page + index
-            const postIndex = cached.page * ITEMS_PER_PAGE + index;
-            const post = cached.posts[postIndex];
-
-            if (!post) {
-                await interaction.reply({ content: '❌ Invalid post selection.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            await interaction.deferReply();
-            await handlePostFetch(interaction, cached.creator, post);
-        } catch (error) {
-            console.error('[Kemono Post View] Error:', error);
-        }
-        return;
-    }
 
     if (interaction.customId.startsWith('new_chat')) {
 

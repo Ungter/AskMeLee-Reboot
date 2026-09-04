@@ -15,6 +15,7 @@ module.exports = {
     discordToken: process.env.DISCORD_TOKEN,
     openRouterApiKey: process.env.OPENROUTER_API_KEY,
     thinkingModel: process.env.THINKING_MODEL,
+    nonThinkingModelVision: process.env.NON_THINKING_MODEL_VISION,
     nonThinkingModel: process.env.NON_THINKING_MODEL,
     classifierModel: process.env.CLASSIFIER_MODEL,
     systemPrompt: systemPrompt,
@@ -28,6 +29,9 @@ module.exports = {
     wakeWord: 'hey lee',
     imageGenModel: process.env.IMAGE_GEN_MODEL,
     vllmBaseUrl: process.env.VLLM_BASE_URL || `http://${process.env.VLLM_HOST || '127.0.0.1'}:${process.env.VLLM_PORT || '8000'}/v1`,
-    vllmModel: process.env.VLLM_MODEL,
+    vllmModel: process.env.VLLM_MODEL || process.env.VLLM_SERVED_MODEL_NAME || 'local-group-model',
     vllmApiKey: process.env.VLLM_API_KEY,
+    vllmGgufFile: process.env.VLLM_GGUF_FILE || 'tunedModel-q6_k.gguf',
+
+    crofKey: process.env.CROF_KEY,
 };

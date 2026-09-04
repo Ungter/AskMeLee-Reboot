@@ -2,8 +2,8 @@ const OpenAI = require('openai');
 const config = require('./config');
 
 const openai = new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
-    apiKey: config.openRouterApiKey,
+    baseURL: 'https://crof.ai/v1',
+    apiKey: config.crofKey,
 });
 
 const CLASSIFIER_TIMEOUT_MS = 5000;
@@ -27,6 +27,9 @@ function withTimeout(promise, fallbackValue, classifierName) {
  * @returns {Promise<boolean>} - True if online search is needed
  */
 async function needsOnlineSearch(query) {
+    // TEMP-DISABLED: online search classifier bypassed (always returns false)
+    return false;
+    /* TEMP-DISABLED: original body kept below (re-enable by removing comment markers)
     return withTimeout((async () => {
         try {
             const response = await openai.chat.completions.create({
@@ -93,6 +96,7 @@ async function needsOnlineSearch(query) {
             return false; // Default to no online search on error
         }
     })(), false, 'needsOnlineSearch');
+    */
 }
 
 /**
@@ -102,6 +106,9 @@ async function needsOnlineSearch(query) {
  * @returns {Promise<boolean>} - True if context is needed
  */
 async function needsContext(query) {
+    // TEMP-DISABLED: context classifier bypassed (always returns true)
+    return true;
+    /* TEMP-DISABLED: original body kept below (re-enable by removing comment markers)
     return withTimeout((async () => {
         try {
             const response = await openai.chat.completions.create({
@@ -165,6 +172,7 @@ async function needsContext(query) {
             return true; // Default to including context on error
         }
     })(), true, 'needsContext');
+    */
 }
 
 /**
@@ -180,9 +188,41 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
 
         const lastUserMessage = messages.filter(m => m.role === 'user').pop();
 
+        // Detect whether the latest user message includes an image.
+        const hasImage = lastUserMessage &&
+            Array.isArray(lastUserMessage.content) &&
+            lastUserMessage.content.some(part => part.type === 'image_url');
+
         let messagesToSend = messages;
         let selectedModel = reasoningEnabled ? config.thinkingModel : config.nonThinkingModel;
 
+        // Vision requires the non-thinking (vision-capable) model.
+        if (hasImage) {
+            reasoningEnabled = false;
+            selectedModel = config.nonThinkingModelVision;
+            console.log(`[Vision] Image detected, forcing vision model: ${selectedModel}`);
+        }
+
+        // Strip image parts from history when we're about to call a non-vision
+        // model (e.g. a later text-only thinking request), so image content in
+        // the history doesn't break the request.
+        if (!hasImage) {
+            const stripImages = (msg) => {
+                if (Array.isArray(msg.content)) {
+                    const hasImagePart = msg.content.some(p => p.type === 'image_url');
+                    if (hasImagePart) {
+                        const text = msg.content
+                            .filter(p => p.type === 'text')
+                            .map(p => p.text)
+                            .join('\n');
+                        return { ...msg, content: text || '[Image attached]' };
+                    }
+                }
+                return msg;
+            };
+            messagesToSend = messages.map(stripImages);
+        }
+        /*
         if (lastUserMessage) {
             console.log(`[Classifiers] Running context and online classifiers in parallel...`);
 
@@ -208,30 +248,24 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
                 console.log(`[Model] Using online-enabled model: ${selectedModel}`);
             }
         }
+            */
 
         const apiMessages = [
             { role: 'system', content: systemPromptWithTime },
             ...messagesToSend
         ];
 
-
-
         const requestOptions = {
             model: selectedModel,
             messages: apiMessages,
             stream: true,
             stream_options: { include_usage: true },
-            provider: {
-                sort: 'throughput'
-            }
         };
 
         if (reasoningEnabled) {
-            requestOptions.reasoning = {
-                effort: 'high',
-                enabled: true,
-                exclude: false
-            };
+            requestOptions.reasoning_effort = 'high'
+        } else {
+            requestOptions.reasoning_effort = 'low'
         }
 
         const stream = await openai.chat.completions.create(requestOptions);
@@ -254,7 +288,7 @@ async function streamResponse(messages, onUpdate, reasoningEnabled = true) {
             // console.log(JSON.stringify(chunk, null, 2));
             const delta = chunk.choices[0]?.delta || {};
             const contentDelta = delta.content || '';
-            const reasoningDelta = delta.reasoning || '';
+            const reasoningDelta = delta.reasoning_content || delta.reasoning || '';
 
             if (chunk.usage) {
                 usage = {

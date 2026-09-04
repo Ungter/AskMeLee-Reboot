@@ -20,14 +20,19 @@ module.exports = {
                 .setDescription('The message to send to the AI.')
                 .setRequired(true))
         .addBooleanOption(option =>
-            option.setName('reasoning')
-                .setDescription('Toggle reasoning for this message (overrides session default).')
+            option.setName('max_effort')
+                .setDescription('Enable max effort reasoning for this message (overrides session default).')
+                .setRequired(false))
+        .addAttachmentOption(option =>
+            option.setName('image')
+                .setDescription('An image to include with your message (vision model).')
                 .setRequired(false)),
     async execute(interaction) {
         console.log(`[Command] User ${interaction.user.id} (${interaction.user.tag}) used /chat in channel ${interaction.channelId}`);
         let messageInput = interaction.options.getString('message');
-        const reasoningOverride = interaction.options.getBoolean('reasoning');
-        const session = sessions.getSession(interaction.user.id, interaction.channelId);
+        const reasoningOverride = interaction.options.getBoolean('max_effort');
+        const imageAttachment = interaction.options.getAttachment('image');
+        const session = sessions.getSession(interaction.user.id, interaction.channelId, 'cloud');
 
         // Check for Message IDs (Snowflakes) in the input
         const snowflakeRegex = /(\d{17,19})/g;
@@ -88,6 +93,8 @@ module.exports = {
             }
         }
 
-        await handleAIResponse(interaction, messageInput, session, reasoningOverride);
+        await handleAIResponse(interaction, messageInput, session, reasoningOverride, {
+            imageUrl: imageAttachment?.url,
+        });
     },
 };

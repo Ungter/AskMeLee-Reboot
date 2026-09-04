@@ -24,7 +24,7 @@ module.exports = {
         console.log(`[Command] User ${interaction.user.id} (${interaction.user.tag}) used /chatwiththegroup in channel ${interaction.channelId}`);
 
         const messageInput = interaction.options.getString('message');
-        const session = sessions.getSession(interaction.user.id, interaction.channelId);
+        const session = sessions.getSession(interaction.user.id, interaction.channelId, 'local');
 
         await handleAIResponse(interaction, messageInput, session, false, {
             streamResponseFn: streamLocalResponse,

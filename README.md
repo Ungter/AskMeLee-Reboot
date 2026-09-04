@@ -8,15 +8,17 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 
 | Command | Description |
 |---------|-------------|
-| `/chat` | Chat with the AI. |
+| `/chat` | Chat with the AI (cloud model via crof.ai). |
+| `/chatwiththegroup` | Chat with your local vLLM model. |
 | `Ask AI` (Context Menu) | Right-click any message to ask the AI about it. Opens a modal for your question. |
 
 **AI Features:**
-- Session-based conversation history
-- Reasoning mode toggle for hard questions
+- Session-based conversation history (per user per channel, 10-minute inactivity auto-reset)
+- Max effort reasoning toggle for hard questions
+- Vision support — attach an image to `/chat` or a bot mention and it's sent to a vision-capable model
+- Separate history for the cloud AI vs. the local vLLM model
 - Automatic text file attachment extraction (`.txt`, `.md`, `.js`, `.py`, `.json`)
 - Message ID resolution - paste a Discord message ID to include its content
-- Context awareness, searches information online if needed.
 
 ### Voice Commands
 
@@ -31,20 +33,6 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 - **Text-to-Speech**: Minimax TTS with customizable voice
 - **Live Listening**: Continuous audio processing while in voice channel
 
-### Kemono Commands
-
-| Command | Description |
-|---------|-------------|
-| `/kemono-top` | Browse top Kemono creators sorted by favorites with pagination. |
-| `/kemono-random` | Get a random post from Kemono with attached files (up to 8MB). |
-| `/kemono-search` | Search for artists and browse their posts. |
-
-**Kemono Features:**
-- Paginated navigation with button controls
-- Automatic file attachments (images, documents)
-- Large file fallback with direct Kemono links
-- Rich embeds with post metadata
-
 ### Other Commands
 
 | Command | Description |
@@ -57,7 +45,7 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
 
 - [Node.js](https://nodejs.org/) v18 or higher
 - A Discord bot token ([Discord Developer Portal](https://discord.com/developers/applications))
-- An OpenRouter API key ([OpenRouter](https://openrouter.ai/))
+- A crof.ai API key (for the cloud AI model)
 - Minimax API key ([Minimax](http://minimax.io/))
 - Visual C++ Redistributable (Optional if you plan on using the JXR converter)
 
@@ -80,13 +68,19 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
    ```env
    DISCORD_TOKEN=
    CLIENT_ID=
-   OPENROUTER_API_KEY=
-   MINIMAX_API_KEY=
-   THINKING_MODEL=z-ai/glm-5
-   NON_THINKING_MODEL=deepseek/deepseek-v3.2
+   CROF_KEY=
+   THINKING_MODEL=
+   NON_THINKING_MODEL=
+   NON_THINKING_MODEL_VISION=
    SST_MODEL=google/gemini-2.5-flash-lite-preview-09-2025
    TTS_MODEL=speech-2.8-hd
-   CLASSIFIER_MODEL=arcee-ai/trinity-mini:free
+
+   # Local vLLM (optional, for /chatwiththegroup)
+   VLLM_BASE_URL=http://127.0.0.1:8000/v1
+   VLLM_MODEL=
+   VLLM_SERVED_MODEL_NAME=
+   VLLM_API_KEY=
+   VLLM_GGUF_FILE=tunedModel-q6_k.gguf
    ```
 
 4. **Deploy slash commands**
@@ -99,6 +93,12 @@ Lee is back! Featuring AI-powered chat with web searching, in-VC chat, and other
    npm run start:auto
    ```
 
+   To also serve your local vLLM model:
+   ```bash
+   npm run serve:local   # start vLLM serving locally
+   npm run start:local   # start the bot with vLLM enabled
+   ```
+
 ## Project Structure
 
 ```
@@ -106,9 +106,10 @@ LeeBotRenewed/
 ├── src/
 │   ├── index.js              # Entry point
 │   ├── bot.js                # Discord client and event handlers
-│   ├── ai.js                 # OpenRouter AI integration
+│   ├── ai.js                 # Cloud AI integration (crof.ai)
+│   ├── localAi.js            # Local vLLM integration + serving
 │   ├── config.js             # Environment configuration
-│   ├── sessions.js           # User session management
+│   ├── sessions.js           # User session management (cloud + local)
 │   ├── system_prompt.txt     # AI system prompt
 │   ├── langExts.json         # File extension mappings
 │   ├── deploy-commands.js    # Slash command deployment
@@ -117,12 +118,9 @@ LeeBotRenewed/
 │   ├── commands/
 │   │   ├── general/          # General commands
 │   │   │   ├── chat.js       # /chat command
+│   │   │   ├── chatWithTheGroup.js # /chatwiththegroup (local model)
 │   │   │   ├── analyze.js    # Ask AI context menu
 │   │   │   └── jxrConvert.js # /jxrconvert command
-│   │   ├── kemono/           # Kemono API commands
-│   │   │   ├── kemonoTop.js
-│   │   │   ├── kemonoRandom.js
-│   │   │   └── kemonoSearch.js
 │   │   └── voice/            # Voice channel commands
 │   │       ├── joinVc.js     # /join-vc command
 │   │       └── leaveVc.js    # /leave-vc command
@@ -137,9 +135,10 @@ LeeBotRenewed/
 │   │   └── wakeWordDetector.js # "Hey Lee" detection
 │   │
 │   └── utils/
-│       ├── kemonoApi.js      # Kemono API utilities
 │       └── responseHandler.js # Discord response handling
 │
+├── tunedModel/               # Local model weights / GGUF files
+├── vllm_patches/             # vLLM patch scripts
 ├── .env                      # Environment variables
 ├── .gitignore
 └── package.json

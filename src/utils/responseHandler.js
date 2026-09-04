@@ -22,8 +22,16 @@ async function handleAIResponse(target, userPrompt, session, reasoningOverride =
     // Determine reasoning state
     const reasoningEnabled = reasoningOverride !== null ? reasoningOverride : session.reasoningEnabled;
 
-    // Add user message to history
-    session.history.push({ role: 'user', content: userPrompt });
+    // Add user message to history. If an image was provided, build OpenAI
+    // vision content parts so the model can "see" it.
+    let userContent = userPrompt;
+    if (options.imageUrl) {
+        userContent = [
+            { type: 'text', text: userPrompt },
+            { type: 'image_url', image_url: { url: options.imageUrl } }
+        ];
+    }
+    session.history.push({ role: 'user', content: userContent });
 
     // Initial feedback
     const initialEmbed = new EmbedBuilder()
